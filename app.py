@@ -1,6 +1,7 @@
 import io
 import pandas as pd
 import streamlit as st
+import requests
 
 import scrapers
 
@@ -26,22 +27,23 @@ if uploaded is not None:
         df_input = pd.read_excel(uploaded)
     st.write('Archivo cargado con', len(df_input), 'registros')
     if st.button('Iniciar scraping masivo'):
+        session = requests.Session()
         resultados = []
         for _, row in df_input.iterrows():
             sku = row.get('SKU') or row.get('sku')
             nombre = row.get('nombre') or row.get('Nombre')
             if sku:
-                res = scrapers.search_beautycreations_sku(str(sku))
+                res = scrapers.search_beautycreations_sku(str(sku), session=session)
                 res.update({'criterio': sku, 'fuente': 'BeautyCreations'})
                 resultados.append(res)
-                res = scrapers.search_bellisima_sku(str(sku))
+                res = scrapers.search_bellisima_sku(str(sku), session=session)
                 res.update({'criterio': sku, 'fuente': 'Bellisima'})
                 resultados.append(res)
             if nombre:
-                res = scrapers.search_stefano_name(str(nombre))
+                res = scrapers.search_stefano_name(str(nombre), session=session)
                 res.update({'criterio': nombre, 'fuente': 'Stefano'})
                 resultados.append(res)
-                res = scrapers.search_dubellay_name(str(nombre))
+                res = scrapers.search_dubellay_name(str(nombre), session=session)
                 res.update({'criterio': nombre, 'fuente': 'Dubellay'})
                 resultados.append(res)
         df_res = pd.DataFrame(resultados)
@@ -58,19 +60,20 @@ with st.form('single'):
     submitted = st.form_submit_button('Buscar')
 
 if submitted:
+    session = requests.Session()
     resultados = []
     if input_sku:
-        res = scrapers.search_beautycreations_sku(input_sku)
+        res = scrapers.search_beautycreations_sku(input_sku, session=session)
         res.update({'criterio': input_sku, 'fuente': 'BeautyCreations'})
         resultados.append(res)
-        res = scrapers.search_bellisima_sku(input_sku)
+        res = scrapers.search_bellisima_sku(input_sku, session=session)
         res.update({'criterio': input_sku, 'fuente': 'Bellisima'})
         resultados.append(res)
     if input_name:
-        res = scrapers.search_stefano_name(input_name)
+        res = scrapers.search_stefano_name(input_name, session=session)
         res.update({'criterio': input_name, 'fuente': 'Stefano'})
         resultados.append(res)
-        res = scrapers.search_dubellay_name(input_name)
+        res = scrapers.search_dubellay_name(input_name, session=session)
         res.update({'criterio': input_name, 'fuente': 'Dubellay'})
         resultados.append(res)
     df_res = pd.DataFrame(resultados)
