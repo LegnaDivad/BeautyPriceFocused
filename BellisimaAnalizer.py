@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import time
+import json
+import re
 
 def obtener_info_producto_bellisima(sku):
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -22,10 +24,47 @@ def obtener_info_producto_bellisima(sku):
     nombre = enlace.get_text(strip=True)
     url_producto = "https://bellisima.mx" + enlace['href']
 
-    # Extraer precio de venta actual
-    precio_tag = soup.select_one("span.price.price--highlight")
-    print(precio_tag)
-    precio = precio_tag.get_text(strip=True) if precio_tag else "No disponible"
+    # Consultar la página del producto para obtener el precio real
+    resp_prod = requests.get(url_producto, headers=headers)
+    soup_prod = BeautifulSoup(resp_prod.text, "html.parser")
+
+    precio = None
+    precio_tag = soup_prod.select_one("span.price-item--regular") or soup_prod.select_one("span.price.price--highlight")
+    if precio_tag:
+        precio = precio_tag.get_text(strip=True)
+
+    if not precio:
+        for script in soup_prod.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.string)
+            except Exception:
+                continue
+            if isinstance(data, dict) and data.get("@type") == "Product":
+                offers = data.get("offers")
+                if isinstance(offers, dict) and offers.get("price"):
+                    precio = str(offers.get("price"))
+                    break
+            elif isinstance(data, list):
+                for d in data:
+                    if isinstance(d, dict) and d.get("@type") == "Product":
+                        offers = d.get("offers")
+                        if isinstance(offers, dict) and offers.get("price"):
+                            precio = str(offers.get("price"))
+                            break
+                if precio:
+                    break
+
+    if not precio:
+        iframe = soup_prod.find("iframe")
+        if iframe and iframe.get("src"):
+            resp_iframe = requests.get(iframe["src"], headers=headers)
+            soup_iframe = BeautifulSoup(resp_iframe.text, "html.parser")
+            m = re.search(r"\$\s*([0-9]+[.,]?[0-9]*)", soup_iframe.get_text(" ", strip=True))
+            if m:
+                precio = m.group(1)
+
+    if not precio:
+        precio = "No disponible"
     precio = precio.replace("Precio de venta", "").replace(" ", "").replace("$", "")
 
     return {

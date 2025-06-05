@@ -90,8 +90,65 @@ def search_bellisima_sku(sku: str, session: Optional[requests.Session] = None) -
         return {"nombre": "No encontrado", "precio": "-", "url": "-"}
     nombre = enlace.get_text(strip=True)
     url_producto = "https://bellisima.mx" + enlace["href"]
-    precio_tag = soup.select_one("span.price.price--highlight")
-    precio = precio_tag.get_text(strip=True) if precio_tag else "No disponible"
+
+    # Consultar la página del producto para obtener el precio real
+    try:
+        resp_prod = session.get(url_producto, headers=headers, timeout=10)
+        time.sleep(1)
+    except requests.RequestException as e:
+        logger.error("Error obteniendo detalle en Bellisima para %s: %s", sku, e)
+        return {"nombre": nombre, "precio": "Error", "url": url_producto}
+    soup_prod = BeautifulSoup(resp_prod.text, "html.parser")
+    precio: Optional[str] = None
+
+    # Intentar extraer el precio de elementos visibles
+    precio_tag = (
+        soup_prod.select_one("span.price-item--regular")
+        or soup_prod.select_one("span.price.price--highlight")
+    )
+    if precio_tag:
+        precio = precio_tag.get_text(strip=True)
+
+    # Intentar extraer el precio desde etiquetas JSON-LD
+    if not precio:
+        for script in soup_prod.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.string)
+            except Exception:
+                continue
+            if isinstance(data, list):
+                for d in data:
+                    if isinstance(d, dict) and d.get("@type") == "Product":
+                        offers = d.get("offers")
+                        if isinstance(offers, dict) and offers.get("price"):
+                            precio = str(offers.get("price"))
+                            break
+                if precio:
+                    break
+            elif isinstance(data, dict) and data.get("@type") == "Product":
+                offers = data.get("offers")
+                if isinstance(offers, dict) and offers.get("price"):
+                    precio = str(offers.get("price"))
+                    break
+
+    # Buscar dentro de un iframe como último recurso
+    if not precio:
+        iframe = soup_prod.find("iframe")
+        if iframe and iframe.get("src"):
+            try:
+                resp_iframe = session.get(iframe["src"], headers=headers, timeout=10)
+                time.sleep(1)
+                soup_iframe = BeautifulSoup(resp_iframe.text, "html.parser")
+                text = soup_iframe.get_text(" ", strip=True)
+                m = re.search(r"\$\s*([0-9]+[.,]?[0-9]*)", text)
+                if m:
+                    precio = m.group(1)
+            except requests.RequestException as e:
+                logger.error("Error obteniendo iframe en Bellisima para %s: %s", sku, e)
+
+    if not precio:
+        precio = "No disponible"
+
     precio = precio.replace("Precio de venta", "").replace(" ", "").replace("$", "")
     return {"nombre": nombre, "precio": precio, "url": url_producto}
 
