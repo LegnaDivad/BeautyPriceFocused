@@ -4,7 +4,7 @@ Esta aplicación permite consultar precios de productos de distintas tiendas de 
 
 ## Requisitos
 
-Instala las dependencias:
+Instala las dependencias (necesitas `requests` y otras librerías):
 
 ```bash
 pip install -r requirements.txt
@@ -19,3 +19,5 @@ streamlit run app.py
 ```
 
 Se abrirá una interfaz web donde podrás cargar un archivo con SKUs o nombres y realizar búsquedas individuales. Los resultados obtenidos se muestran en pantalla y se pueden descargar en Excel.
+
+Todas las búsquedas se registran en `scraper.log`, lo que facilita detectar códigos de error como 403.

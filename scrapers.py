@@ -6,6 +6,21 @@ import logging
 from typing import Optional
 from bs4 import BeautifulSoup
 
+# Encabezados que simulan un navegador real para evitar bloqueos
+DEFAULT_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,"
+        "image/webp,image/apng,*/*;q=0.8"
+    ),
+    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    "Referer": "https://google.com/",
+}
+
 
 logging.basicConfig(
     filename="scraper.log",
@@ -18,7 +33,7 @@ logger = logging.getLogger(__name__)
 def search_beautycreations_sku(sku: str, session: Optional[requests.Session] = None) -> dict:
     """Busca un producto en Beauty Creations por SKU."""
     logger.info("Buscando SKU %s en Beauty Creations", sku)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = DEFAULT_HEADERS
     url = f"https://beautycreationscosmetics.com.mx/search?q={sku}"
     session = session or requests.Session()
     try:
@@ -27,6 +42,9 @@ def search_beautycreations_sku(sku: str, session: Optional[requests.Session] = N
     except requests.RequestException as e:
         logger.error("Error de conexión en Beauty Creations para %s: %s", sku, e)
         return {"nombre": "Error", "precio": "Error", "url": "Error"}
+    if resp.status_code == 403:
+        logger.error("Acceso denegado con código 403 en Beauty Creations para %s", sku)
+        return {"nombre": "Acceso denegado", "precio": "-", "url": "-"}
     if resp.status_code != 200:
         logger.error("Código de respuesta %s en Beauty Creations para %s", resp.status_code, sku)
         return {"nombre": "Error", "precio": "Error", "url": "Error"}
@@ -50,7 +68,7 @@ def search_beautycreations_sku(sku: str, session: Optional[requests.Session] = N
 def search_bellisima_sku(sku: str, session: Optional[requests.Session] = None) -> dict:
     """Busca un producto en Bellisima por SKU."""
     logger.info("Buscando SKU %s en Bellisima", sku)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = DEFAULT_HEADERS
     url = f"https://bellisima.mx/search?q={sku}"
     session = session or requests.Session()
     try:
@@ -59,6 +77,9 @@ def search_bellisima_sku(sku: str, session: Optional[requests.Session] = None) -
     except requests.RequestException as e:
         logger.error("Error de conexión en Bellisima para %s: %s", sku, e)
         return {"nombre": "Error", "precio": "Error", "url": "Error"}
+    if resp.status_code == 403:
+        logger.error("Acceso denegado con código 403 en Bellisima para %s", sku)
+        return {"nombre": "Acceso denegado", "precio": "-", "url": "-"}
     if resp.status_code != 200:
         logger.error("Código de respuesta %s en Bellisima para %s", resp.status_code, sku)
         return {"nombre": "Error", "precio": "Error", "url": "Error"}
@@ -78,7 +99,7 @@ def search_bellisima_sku(sku: str, session: Optional[requests.Session] = None) -
 def search_stefano_name(nombre_producto: str, session: Optional[requests.Session] = None) -> dict:
     """Busca un producto en Stefano por nombre."""
     logger.info("Buscando producto '%s' en Stefano", nombre_producto)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = DEFAULT_HEADERS
     url = f"https://stefanocosmetics.com/search?q={nombre_producto}"
     session = session or requests.Session()
     try:
@@ -87,6 +108,9 @@ def search_stefano_name(nombre_producto: str, session: Optional[requests.Session
     except requests.RequestException as e:
         logger.error("Error de conexión en Stefano para '%s': %s", nombre_producto, e)
         return {"nombre": "Error", "precio": "Error", "url": "Error", "coincidencia": 0}
+    if resp.status_code == 403:
+        logger.error("Acceso denegado con código 403 en Stefano para '%s'", nombre_producto)
+        return {"nombre": "Acceso denegado", "precio": "-", "url": "-", "coincidencia": 0}
     if resp.status_code != 200:
         logger.error("Código de respuesta %s en Stefano para '%s'", resp.status_code, nombre_producto)
         return {"nombre": "Error", "precio": "Error", "url": "Error", "coincidencia": 0}
@@ -118,7 +142,7 @@ def search_stefano_name(nombre_producto: str, session: Optional[requests.Session
 def search_dubellay_name(nombre_producto: str, session: Optional[requests.Session] = None) -> dict:
     """Busca un producto en Dubellay por nombre."""
     logger.info("Buscando producto '%s' en Dubellay", nombre_producto)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = DEFAULT_HEADERS
     url = f"https://dubellay.mx/search?q={nombre_producto}"
     session = session or requests.Session()
     try:
@@ -127,6 +151,9 @@ def search_dubellay_name(nombre_producto: str, session: Optional[requests.Sessio
     except requests.RequestException as e:
         logger.error("Error de conexión en Dubellay para '%s': %s", nombre_producto, e)
         return {"nombre": "Error", "precio": "Error", "url": "Error", "coincidencia": 0}
+    if resp.status_code == 403:
+        logger.error("Acceso denegado con código 403 en Dubellay para '%s'", nombre_producto)
+        return {"nombre": "Acceso denegado", "precio": "-", "url": "-", "coincidencia": 0}
     if resp.status_code != 200:
         logger.error("Código de respuesta %s en Dubellay para '%s'", resp.status_code, nombre_producto)
         return {"nombre": "Error", "precio": "Error", "url": "Error", "coincidencia": 0}
