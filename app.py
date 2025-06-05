@@ -12,6 +12,12 @@ if 'results' not in st.session_state:
 st.title('Beauty Price Focused')
 
 st.header('Carga de Archivo Maestro')
+st.caption('Ejemplo de formato de archivo para búsqueda masiva:')
+example_df = pd.DataFrame({
+    'SKU': ['12345', '67890'],
+    'Nombre': ['Producto Ejemplo 1', 'Producto Ejemplo 2']
+})
+st.table(example_df)
 uploaded = st.file_uploader('Selecciona un CSV o Excel con nombres o SKUs', type=['csv','xlsx'])
 if uploaded is not None:
     if uploaded.name.endswith('.csv'):
