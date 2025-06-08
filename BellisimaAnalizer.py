@@ -29,7 +29,15 @@ def obtener_info_producto_bellisima(sku):
     soup_prod = BeautifulSoup(resp_prod.text, "html.parser")
 
     precio = None
-    precio_tag = soup_prod.select_one("span.price-item--regular") or soup_prod.select_one("span.price.price--highlight")
+    # bellisima renders the price in a couple of different markup variants
+    # depending on the product state (on sale, regular, etc.).
+    # Try several possible selectors before falling back to JSON/iframe parsing.
+    precio_tag = (
+        soup_prod.select_one("span.price.price--large")
+        or soup_prod.select_one("span.price-item--regular")
+        or soup_prod.select_one("span.price.price--highlight")
+        or soup_prod.select_one("span.price__regular")
+    )
     if precio_tag:
         precio = precio_tag.get_text(strip=True)
 
