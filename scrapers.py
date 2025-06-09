@@ -103,11 +103,14 @@ def search_bellisima_sku(sku: str, session: Optional[requests.Session] = None) -
 
     # Intentar extraer el precio de elementos visibles
     precio_tag = (
-        soup_prod.select_one("span.price-item--regular")
+        soup_prod.select_one("div.price-list span.price")
+        or soup_prod.select_one("span.price-item--regular")
         or soup_prod.select_one("span.price.price--highlight")
     )
     if precio_tag:
-        precio = precio_tag.get_text(strip=True)
+        text = precio_tag.get_text(" ", strip=True)
+        m = re.search(r"\$\s*([0-9.,]+)", text)
+        precio = m.group(1) if m else text
 
     # Intentar extraer el precio desde etiquetas JSON-LD
     if not precio:

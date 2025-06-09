@@ -33,13 +33,16 @@ def obtener_info_producto_bellisima(sku):
     # depending on the product state (on sale, regular, etc.).
     # Try several possible selectors before falling back to JSON/iframe parsing.
     precio_tag = (
-        soup_prod.select_one("span.price.price--large")
+        soup_prod.select_one("div.price-list span.price")
+        or soup_prod.select_one("span.price.price--large")
         or soup_prod.select_one("span.price-item--regular")
         or soup_prod.select_one("span.price.price--highlight")
         or soup_prod.select_one("span.price__regular")
     )
     if precio_tag:
-        precio = precio_tag.get_text(strip=True)
+        text = precio_tag.get_text(" ", strip=True)
+        m = re.search(r"\$\s*([0-9.,]+)", text)
+        precio = m.group(1) if m else text
 
     if not precio:
         for script in soup_prod.find_all("script", type="application/ld+json"):
