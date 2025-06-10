@@ -55,7 +55,11 @@ def search_beautycreations_sku(sku: str, session: Optional[requests.Session] = N
         return {"nombre": "No encontrado", "precio": "-", "url": "-"}
     try:
         data = json.loads(match.group(1))
-        variante = data["searchResult"]["productVariants"][0]
+        variantes = data.get("searchResult", {}).get("productVariants", [])
+        if not variantes:
+            logger.info("SKU %s no encontrado en Beauty Creations", sku)
+            return {"nombre": "No encontrado", "precio": "-", "url": "-"}
+        variante = variantes[0]
         nombre = variante["product"]["title"]
         precio = f"${variante['price']['amount']:.2f} MXN"
         url_producto = "https://beautycreationscosmetics.com.mx" + variante["product"]["url"]
